@@ -10,7 +10,6 @@ import { buildSchema } from 'type-graphql'
 import { COOKIE_NAME, __prod__ } from './constants'
 import { PostResolver } from './resolvers/post'
 import { UserResolver } from './resolvers/user'
-import { MyContext } from './types'
 
 const main = async () => {
     const orm = await MikroORM.init()
@@ -50,7 +49,7 @@ const main = async () => {
             resolvers: [PostResolver, UserResolver],
             validate: false,
         }),
-        context: ({ req, res }: MyContext) => ({ em: orm.em, req, res }),
+        context: ({ req, res }) => ({ em: orm.em, req, res }),
     })
 
     apolloServer.applyMiddleware({
@@ -58,6 +57,6 @@ const main = async () => {
         cors: false,
     })
 
-    app.listen(3001, () => console.log('server started'))
+    app.listen(3001, () => console.log('server started on port 3001'))
 }
 main()

@@ -67,7 +67,7 @@ export class UserResolver {
         }
         if (errors.length > 0) return { errors }
 
-        if (em.findOne(User, { username })) {
+        if (await em.findOne(User, { username })) {
             return { errors: [{ field: 'username', message: 'already taken' }] }
         }
         // Create User and return
