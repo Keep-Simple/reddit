@@ -105,7 +105,7 @@ export class UserResolver {
 
         const tokenError = [
             {
-                field: 'token',
+                field: 'tokenError',
                 message: 'token expired or user not found',
             },
         ]
