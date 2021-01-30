@@ -14,7 +14,7 @@ const Login: React.FC = ({}) => {
     const [, login] = useLoginMutation()
 
     const onLogin = useCallback(async (values, { setErrors }) => {
-        const { data } = await login({ options: values })
+        const { data } = await login(values)
 
         if (data?.login.errors) {
             setErrors(toErrorMap(data.login.errors))
@@ -26,15 +26,15 @@ const Login: React.FC = ({}) => {
     return (
         <Wrapper variant="small">
             <Formik
-                initialValues={{ username: '', password: '' }}
+                initialValues={{ usernameOrEmail: '', password: '' }}
                 onSubmit={onLogin}
             >
                 {({ isSubmitting }) => (
                     <Form>
                         <InputField
-                            name="username"
-                            placeholder="username"
-                            label="Username"
+                            name="usernameOrEmail"
+                            placeholder="usernameOrEmail"
+                            label="Username|Email"
                         />
                         <Box mt={4}>
                             <InputField

@@ -10,15 +10,18 @@ import {
     Resolver,
 } from 'type-graphql'
 import { COOKIE_NAME } from '../constants'
+import { validateRegistration } from '../utils/validateRegister'
 import { User } from '../entities/User'
 import { MyContext } from '../types'
 
 @InputType()
-class UsernamePasswordInput {
+export class AuthInput {
     @Field()
     username: string
     @Field()
     password: string
+    @Field()
+    email: string
 }
 
 @ObjectType()
@@ -41,30 +44,29 @@ class UserResponse {
 export class UserResolver {
     @Query(() => User, { nullable: true })
     me(@Ctx() { req, em }: MyContext) {
-        if (!req.session.userId) return null
+        if (!req.session.userId) {
+            return null
+        }
         return em.findOne(User, { id: req.session.userId })
+    }
+
+    @Mutation(() => Boolean)
+    async forgotPassword(
+        @Arg('email') email: string,
+        @Ctx() { em }: MyContext
+    ) {
+        const user = await em.findOne(User, { email: email })
     }
 
     @Mutation(() => UserResponse)
     async register(
-        @Arg('options') { username, password }: UsernamePasswordInput,
+        @Arg('options') options: AuthInput,
         @Ctx() { em, req }: MyContext
     ) {
-        // Validate
-        const errors = []
+        const errors = validateRegistration(options)
 
-        if (username.length <= 2) {
-            errors.push({
-                field: 'username',
-                message: 'length must be greater than 2',
-            })
-        }
-        if (password.length <= 3) {
-            errors.push({
-                field: 'password',
-                message: 'length must be greater than 3',
-            })
-        }
+        const { username, password, email } = options
+
         if (errors.length > 0) return { errors }
 
         if (await em.findOne(User, { username })) {
@@ -74,7 +76,12 @@ export class UserResolver {
 
         const hashedPassword = await argo2.hash(password)
 
-        const user = em.create(User, { username, password: hashedPassword })
+        const user = em.create(User, {
+            username,
+            password: hashedPassword,
+            email,
+        })
+
         await em.persistAndFlush(user)
 
         req.session.userId = user.id
@@ -83,21 +90,27 @@ export class UserResolver {
 
     @Mutation(() => UserResponse)
     async login(
-        @Arg('options') options: UsernamePasswordInput,
+        @Arg('usernameOrEmail') usernameOrEmail: string,
+        @Arg('password') password: string,
         @Ctx() { em, req }: MyContext
     ) {
-        const user = await em.findOne(User, { username: options.username })
+        const isEmail = usernameOrEmail.includes('@')
+        const user = await em.findOne(
+            User,
+            isEmail ? { email: usernameOrEmail } : { username: usernameOrEmail }
+        )
+
         if (!user) {
             return {
                 errors: [
                     {
-                        field: 'username',
-                        message: "that username doesn't exist",
+                        field: 'usernameOrEmail',
+                        message: "that user doesn't exist",
                     },
                 ],
             }
         }
-        const valid = await argo2.verify(user.password, options.password)
+        const valid = await argo2.verify(user.password, password)
         if (!valid) {
             return {
                 errors: [
@@ -117,6 +130,7 @@ export class UserResolver {
     @Mutation(() => Boolean)
     logout(@Ctx() { req, res }: MyContext) {
         res.clearCookie(COOKIE_NAME)
+
         return new Promise((resolve) =>
             req.session.destroy((e) => (e ? resolve(false) : resolve(true)))
         )

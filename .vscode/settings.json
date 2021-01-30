@@ -5,10 +5,10 @@
             "server": "localhost",
             "port": 5432,
             "driver": "PostgreSQL",
-            "name": "test",
-            "database": "lireddit",
-            "username": "postgres",
-            "password": "admin"
+            "name": "keepmusic",
+            "database": "keepmusic",
+            "username": "nick",
+            "password": "postgres"
         }
     ]
 }

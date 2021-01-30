@@ -9,9 +9,9 @@ export default {
         pattern: /^[\w-]+\d+\.[tj]s$/,
     },
     entities: [Post, User],
-    dbName: 'keep-music',
+    dbName: 'keepmusic',
     user: 'nick',
-    password: 'admin',
+    password: 'postgres',
     type: 'postgresql',
     debug: !__prod__,
 }
