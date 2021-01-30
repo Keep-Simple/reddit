@@ -55,7 +55,7 @@ const Register: React.FC<registerProps> = ({}) => {
                             type="submit"
                             variantColor="teal"
                         >
-                            register
+                            Register
                         </Button>
                     </Form>
                 )}

@@ -2,7 +2,7 @@ import { AuthInput } from '../resolvers/user'
 
 const regex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
 
-function validateEmail(email?: string) {
+export function validateEmail(email?: string) {
     if (!email) return false
     return regex.test(email)
 }

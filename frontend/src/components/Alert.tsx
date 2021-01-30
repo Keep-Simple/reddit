@@ -1,7 +1,7 @@
 import { Alert, AlertIcon, IAlert } from '@chakra-ui/core/dist/Alert'
 
 interface AlertProps {
-    message?: string
+    message?: string | JSX.Element
     status?: IAlert['status']
 }
 

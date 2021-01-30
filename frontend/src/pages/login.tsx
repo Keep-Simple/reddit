@@ -1,7 +1,8 @@
-import { Box, Button } from '@chakra-ui/core'
+import { Box, Button, Flex } from '@chakra-ui/core'
 import { Form, Formik } from 'formik'
 import { withUrqlClient } from 'next-urql'
 import { useRouter } from 'next/router'
+import React from 'react'
 import { InputField } from '../components/InputField'
 import { Wrapper } from '../components/Wrapper'
 import { useLoginMutation } from '../generated/graphql'
@@ -31,7 +32,7 @@ const Login: React.FC = ({}) => {
                         <InputField
                             name="usernameOrEmail"
                             placeholder="usernameOrEmail"
-                            label="Username|Email"
+                            label="Username | Email"
                         />
                         <Box mt={4}>
                             <InputField
@@ -41,14 +42,23 @@ const Login: React.FC = ({}) => {
                                 type="password"
                             />
                         </Box>
-                        <Button
-                            mt={4}
-                            isLoading={isSubmitting}
-                            type="submit"
-                            variantColor="teal"
-                        >
-                            login
-                        </Button>
+
+                        <Flex mt={4} justifyContent="space-between">
+                            <Button
+                                onClick={() => router.push('/forgot-password')}
+                                variant="outline"
+                                variantColor="teal"
+                            >
+                                Forgot Password
+                            </Button>
+                            <Button
+                                isLoading={isSubmitting}
+                                type="submit"
+                                variantColor="teal"
+                            >
+                                Login
+                            </Button>
+                        </Flex>
                     </Form>
                 )}
             </Formik>

@@ -13,7 +13,7 @@ import { v4 } from 'uuid'
 
 import { sendEmail } from '../utils/sendEmail'
 import { COOKIE_NAME, FORGET_PASSWORD_PPREFIX } from '../constants'
-import { validateRegistration } from '../utils/validateRegister'
+import { validateEmail, validateRegistration } from '../utils/validateRegister'
 import { User } from '../entities/User'
 import { MyContext } from '../types'
 
@@ -58,6 +58,8 @@ export class UserResolver {
         @Arg('email') email: string,
         @Ctx() { em, redis }: MyContext
     ) {
+        if (!validateEmail(email)) return false
+
         const user = await em.findOne(User, { email: email })
 
         if (!user) {
@@ -101,12 +103,13 @@ export class UserResolver {
             }
         }
 
-        const userId = await redis.get(FORGET_PASSWORD_PPREFIX + token)
+        const redisKey = FORGET_PASSWORD_PPREFIX + token
+        const userId = await redis.get(redisKey)
 
         const tokenError = [
             {
                 field: 'tokenError',
-                message: 'token expired or user not found',
+                message: 'Token expired | User not found',
             },
         ]
 
@@ -119,6 +122,8 @@ export class UserResolver {
         user.password = await argoHash.hash(newPassword)
 
         await em.persistAndFlush(user)
+
+        await redis.del(redisKey)
 
         req.session.userId = user.id
 
