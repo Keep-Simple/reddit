@@ -2,7 +2,6 @@ import { Box, Button } from '@chakra-ui/core'
 import { Form, Formik } from 'formik'
 import { withUrqlClient } from 'next-urql'
 import { useRouter } from 'next/router'
-import React, { useCallback } from 'react'
 import { InputField } from '../components/InputField'
 import { Wrapper } from '../components/Wrapper'
 import { useLoginMutation } from '../generated/graphql'
@@ -13,21 +12,19 @@ const Login: React.FC = ({}) => {
     const router = useRouter()
     const [, login] = useLoginMutation()
 
-    const onLogin = useCallback(async (values, { setErrors }) => {
-        const { data } = await login(values)
-
-        if (data?.login.errors) {
-            setErrors(toErrorMap(data.login.errors))
-        } else if (data?.login.user) {
-            router.push('/')
-        }
-    }, [])
-
     return (
         <Wrapper variant="small">
             <Formik
                 initialValues={{ usernameOrEmail: '', password: '' }}
-                onSubmit={onLogin}
+                onSubmit={async (values, { setErrors }) => {
+                    const { data } = await login(values)
+
+                    if (data?.login.errors) {
+                        setErrors(toErrorMap(data.login.errors))
+                    } else if (data?.login.user) {
+                        router.push('/')
+                    }
+                }}
             >
                 {({ isSubmitting }) => (
                     <Form>
