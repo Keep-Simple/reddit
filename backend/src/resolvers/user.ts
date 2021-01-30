@@ -46,21 +46,21 @@ class UserResponse {
 @Resolver()
 export class UserResolver {
     @Query(() => User, { nullable: true })
-    me(@Ctx() { req, em }: MyContext) {
+    me(@Ctx() { req }: MyContext) {
         if (!req.session.userId) {
             return null
         }
-        return em.findOne(User, { id: req.session.userId })
+        return User.findOne(req.session.userId)
     }
 
     @Mutation(() => Boolean)
     async forgotPassword(
         @Arg('email') email: string,
-        @Ctx() { em, redis }: MyContext
+        @Ctx() { redis }: MyContext
     ) {
         if (!validateEmail(email)) return false
 
-        const user = await em.findOne(User, { email: email })
+        const user = await User.findOne({ where: { email } })
 
         if (!user) {
             // to prevent fishing
@@ -90,7 +90,7 @@ export class UserResolver {
     async changePassword(
         @Arg('token') token: string,
         @Arg('newPassword') newPassword: string,
-        @Ctx() { redis, em, req }: MyContext
+        @Ctx() { redis, req }: MyContext
     ): Promise<UserResponse> {
         if (newPassword.length <= 2) {
             return {
@@ -115,13 +115,16 @@ export class UserResolver {
 
         if (!userId) return { errors: tokenError }
 
-        const user = await em.findOne(User, { id: parseInt(userId) })
+        const userIdNum = parseInt(userId, 10)
+
+        const user = await User.findOne(userIdNum)
 
         if (!user) return { errors: tokenError }
 
-        user.password = await argoHash.hash(newPassword)
-
-        await em.persistAndFlush(user)
+        await User.update(
+            { id: userIdNum },
+            { password: await argoHash.hash(newPassword) }
+        )
 
         await redis.del(redisKey)
 
@@ -133,7 +136,7 @@ export class UserResolver {
     @Mutation(() => UserResponse)
     async register(
         @Arg('options') options: AuthInput,
-        @Ctx() { em, req }: MyContext
+        @Ctx() { req }: MyContext
     ) {
         const errors = validateRegistration(options)
 
@@ -141,22 +144,18 @@ export class UserResolver {
 
         if (errors.length > 0) return { errors }
 
-        if (await em.findOne(User, { username })) {
+        if (await User.findOne({ where: { username } })) {
             return { errors: [{ field: 'username', message: 'already taken' }] }
         }
-        // Create User and return
 
-        const hashedPassword = await argoHash.hash(password)
-
-        const user = em.create(User, {
+        const user = await User.create({
             username,
-            password: hashedPassword,
             email,
-        })
-
-        await em.persistAndFlush(user)
+            password: await argoHash.hash(password),
+        }).save()
 
         req.session.userId = user.id
+
         return { user }
     }
 
@@ -164,12 +163,12 @@ export class UserResolver {
     async login(
         @Arg('usernameOrEmail') usernameOrEmail: string,
         @Arg('password') password: string,
-        @Ctx() { em, req }: MyContext
+        @Ctx() { req }: MyContext
     ) {
-        const isEmail = usernameOrEmail.includes('@')
-        const user = await em.findOne(
-            User,
-            isEmail ? { email: usernameOrEmail } : { username: usernameOrEmail }
+        const user = await User.findOne(
+            usernameOrEmail.includes('@')
+                ? { where: { email: usernameOrEmail } }
+                : { where: { username: usernameOrEmail } }
         )
 
         if (!user) {

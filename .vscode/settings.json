@@ -5,8 +5,8 @@
             "server": "localhost",
             "port": 5432,
             "driver": "PostgreSQL",
-            "name": "keepmusic",
-            "database": "keepmusic",
+            "name": "keep-music",
+            "database": "keep-music",
             "username": "nick",
             "password": "postgres"
         }

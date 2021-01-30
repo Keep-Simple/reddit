@@ -28,10 +28,6 @@
         "typescript": "^4.0.2"
     },
     "dependencies": {
-        "@mikro-orm/cli": "^4.0.3",
-        "@mikro-orm/core": "^4.0.3",
-        "@mikro-orm/migrations": "^4.0.3",
-        "@mikro-orm/postgresql": "^4.0.3",
         "@types/nodemailer": "^6.4.0",
         "apollo-server-express": "^2.17.0",
         "argon2": "^0.27.0",
@@ -45,13 +41,7 @@
         "nodemon": "^2.0.4",
         "pg": "^8.3.3",
         "type-graphql": "^1.0.0",
+        "typeorm": "^0.2.30",
         "uuid": "^8.3.2"
-    },
-    "mikro-orm": {
-        "useTsNode": true,
-        "configPaths": [
-            "./src/mikro-orm.config.ts",
-            "./dist/mikro-orm.config.js"
-        ]
     }
 }
