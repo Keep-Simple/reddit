@@ -31,7 +31,7 @@ const Login: React.FC = ({}) => {
                     <Form>
                         <InputField
                             name="usernameOrEmail"
-                            placeholder="usernameOrEmail"
+                            placeholder="user | any@mail.com"
                             label="Username | Email"
                         />
                         <Box mt={4}>
