@@ -1,7 +1,17 @@
+import { stringifyVariables } from '@urql/core'
 import { ChangePasswordMutation } from './../generated/graphql'
 import { cacheExchange } from '@urql/exchange-graphcache'
-import { Cache, QueryInput } from '@urql/exchange-graphcache/dist/types/types'
-import { dedupExchange, fetchExchange } from 'urql'
+import {
+    Cache,
+    QueryInput,
+    Resolver,
+} from '@urql/exchange-graphcache/dist/types/types'
+import {
+    CombinedError,
+    dedupExchange,
+    errorExchange,
+    fetchExchange,
+} from 'urql'
 import {
     LoginMutation,
     LogoutMutation,
@@ -9,6 +19,36 @@ import {
     MeQuery,
     RegisterMutation,
 } from '../generated/graphql'
+import Router from 'next/router'
+
+export type MergeMode = 'before' | 'after'
+
+export const cursorPagination = (): Resolver => {
+    return (_parent, fieldArgs, cache, info) => {
+        const { parentKey, fieldName } = info
+
+        const notInCache = !cache.resolveFieldByKey(
+            parentKey,
+            `${fieldName}(${stringifyVariables(fieldArgs)})`
+        )
+
+        info.partial = notInCache
+
+        return cache
+            .inspectFields(parentKey)
+            .filter((info) => info.fieldName === fieldName)
+            ?.reduce(
+                (acc: string[], fi) =>
+                    acc.concat(
+                        cache.resolveFieldByKey(
+                            parentKey,
+                            fi.fieldKey
+                        ) as string[]
+                    ),
+                []
+            )
+    }
+}
 
 function betterUpdateQuery<Result, Query>(
     cache: Cache,
@@ -27,6 +67,11 @@ export const createUrqlClient = (ssrExchange: any) => ({
     exchanges: [
         dedupExchange,
         cacheExchange({
+            resolvers: {
+                Query: {
+                    posts: cursorPagination(),
+                },
+            },
             updates: {
                 Mutation: {
                     changePassword: (_result, args, cache, info) => {
@@ -86,6 +131,13 @@ export const createUrqlClient = (ssrExchange: any) => ({
                         )
                     },
                 },
+            },
+        }),
+        errorExchange({
+            onError: (error: CombinedError) => {
+                if (error?.message.includes('not authenticated')) {
+                    Router.replace('/login')
+                }
             },
         }),
         ssrExchange,

@@ -12,6 +12,7 @@ import { PostResolver } from './resolvers/post'
 import { UserResolver } from './resolvers/user'
 import { Post } from './entities/Post'
 import { User } from './entities/User'
+import path from 'path'
 
 const main = async () => {
     const dbConnection = await createConnection({
@@ -22,7 +23,10 @@ const main = async () => {
         logging: true,
         synchronize: true,
         entities: [User, Post],
+        migrations: [path.join(__dirname, './migrations/*')],
     })
+
+    await dbConnection.runMigrations()
 
     const RedisStore = connectRedis(session)
     const redis = new Redis()

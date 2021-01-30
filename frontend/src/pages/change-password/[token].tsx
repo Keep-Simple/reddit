@@ -14,7 +14,6 @@ import { toErrorMap } from '../../utils/toErrorMap'
 const ChangePassword: React.FC = () => {
     const router = useRouter()
     const [, changePassword] = useChangePasswordMutation()
-    const token = router.query.token as string
 
     return (
         <Wrapper variant="small">
@@ -23,7 +22,10 @@ const ChangePassword: React.FC = () => {
                 onSubmit={async (values, { setErrors }) => {
                     const { data } = await changePassword({
                         newPassword: values.newPassword,
-                        token,
+                        token:
+                            typeof router.query.token === 'string'
+                                ? router.query.token
+                                : '',
                     })
 
                     if (data?.changePassword.errors) {
