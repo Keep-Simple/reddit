@@ -36,7 +36,7 @@ export const cursorPagination = (): Resolver => {
 
         info.partial = notInCache
 
-        return cache
+        const res = cache
             .inspectFields(parentKey)
             .filter((info) => info.fieldName === fieldName)
             ?.reduce(
@@ -49,6 +49,8 @@ export const cursorPagination = (): Resolver => {
                     ),
                 []
             )
+
+        return res?.length === 0 ? undefined : res
     }
 }
 
@@ -67,7 +69,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => ({
     fetchOptions: {
         credentials: 'include' as const,
         headers: {
-            cookie: ctx.req.headers.cookie || '',
+            cookie: ctx?.req?.headers?.cookie || '',
         },
     },
     exchanges: [
