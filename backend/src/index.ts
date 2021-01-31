@@ -13,6 +13,7 @@ import { UserResolver } from './resolvers/user'
 import { Post } from './entities/Post'
 import { User } from './entities/User'
 import path from 'path'
+import { Updoot } from './entities/Updoot'
 
 const main = async () => {
     const dbConnection = await createConnection({
@@ -22,7 +23,7 @@ const main = async () => {
         password: 'postgres',
         logging: true,
         synchronize: true,
-        entities: [User, Post],
+        entities: [User, Post, Updoot],
         migrations: [path.join(__dirname, './migrations/*')],
     })
 

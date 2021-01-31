@@ -17,7 +17,7 @@ import AlertUI from '../components/Alert'
 
 const Index = () => {
     const [vars, setVars] = useState({
-        limit: 10,
+        limit: 15,
         cursor: null as string | null,
     })
     const [{ data, fetching }] = usePostsQuery({
@@ -41,12 +41,22 @@ const Index = () => {
             ) : (
                 <>
                     <Stack spacing={8}>
-                        {data?.posts.map(({ id, title, textSnippet }) => (
-                            <Box key={id} p={5} shadow="md" borderWidth="1px">
-                                <Heading fontSize="xl">{title}</Heading>
-                                <Text mt={4}>{textSnippet}</Text>
-                            </Box>
-                        ))}
+                        {data?.posts.map(
+                            ({ id, title, textSnippet, creator }) => (
+                                <Box
+                                    key={id}
+                                    p={5}
+                                    shadow="md"
+                                    borderWidth="1px"
+                                >
+                                    <Heading fontSize="xl">{title}</Heading>
+                                    <Text color="blue.400">
+                                        posted by {creator.username}
+                                    </Text>
+                                    <Text mt={4}>{textSnippet}</Text>
+                                </Box>
+                            )
+                        )}
                     </Stack>
                     {data && (
                         <Flex>

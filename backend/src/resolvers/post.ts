@@ -1,5 +1,3 @@
-import { isAuth } from './../middleware/isAuth'
-import { MyContext } from 'src/types'
 import {
     Arg,
     Ctx,
@@ -13,8 +11,10 @@ import {
     Root,
     UseMiddleware,
 } from 'type-graphql'
-import { Post } from '../entities/Post'
 import { getConnection } from 'typeorm'
+import { Post } from '../entities/Post'
+import { isAuth } from './../middleware/isAuth'
+import { MyContext } from '../types'
 
 @InputType()
 class PostInput {
@@ -32,25 +32,31 @@ export class PostResolver {
     }
 
     @Query(() => [Post])
-    posts(
+    async posts(
         @Arg('limit', () => Int) limit: number,
         @Arg('cursor', () => String, { nullable: true }) cursor?: string
     ) {
         const realLimit = Math.min(50, limit)
 
-        const query = getConnection()
-            .getRepository(Post)
-            .createQueryBuilder('p')
-            .orderBy('"createdAt"', 'DESC')
-            .take(realLimit)
+        const posts = await getConnection().query(
+            `
+        select p.*,
+        json_build_object(
+            'id', u.id,
+            'username', u.username,
+            'email', u.email,
+            'createdAt', u."createdAt",
+            'updatedAt', u."updatedAt"
+        ) creator
+        from post p
+        inner join public.user u on u.id = p."creatorId"
+        ${cursor ? `where p."createdAt" < ${new Date(parseInt(cursor))}` : ''}
+        order by p."createdAt" DESC
+        limit ${realLimit}
+        `
+        )
 
-        if (cursor) {
-            query.where('"createdAt" < :cursor', {
-                cursor: new Date(parseInt(cursor)),
-            })
-        }
-
-        return query.getMany()
+        return posts
     }
 
     @Query(() => Post, { nullable: true })
@@ -79,6 +85,36 @@ export class PostResolver {
     @Mutation(() => Boolean)
     async deletePost(@Arg('id') id: number) {
         await Post.delete(id)
+        return true
+    }
+
+    @Mutation(() => Boolean)
+    @UseMiddleware(isAuth)
+    async vote(
+        @Arg('postId') postId: number,
+        @Arg('value') value: number,
+        @Ctx() { req }: MyContext
+    ) {
+        if (Number.isNaN(value) || value === 0) return false
+
+        const { userId } = req.session
+        const updoot = value > 0 ? 1 : -1
+
+        // await Updoot.insert({ userId, postId, value: updoot })
+
+        await getConnection().query(`
+        start transaction;
+
+        insert into updoot ("userId", "postId", "value")
+        values (${userId}, ${postId}, ${updoot});
+
+        update post
+        set points = points + ${updoot}
+        where id = ${postId};
+
+        commit;
+        `)
+
         return true
     }
 }

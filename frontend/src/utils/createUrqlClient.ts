@@ -21,8 +21,6 @@ import {
 } from '../generated/graphql'
 import Router from 'next/router'
 
-export type MergeMode = 'before' | 'after'
-
 export const cursorPagination = (): Resolver => {
     return (_parent, fieldArgs, cache, info) => {
         const { parentKey, fieldName } = info
@@ -50,6 +48,7 @@ export const cursorPagination = (): Resolver => {
     }
 }
 
+// just funtion to get types
 function betterUpdateQuery<Result, Query>(
     cache: Cache,
     qi: QueryInput,
@@ -69,12 +68,27 @@ export const createUrqlClient = (ssrExchange: any) => ({
         cacheExchange({
             resolvers: {
                 Query: {
+                    // stack queries data to create long data list
                     posts: cursorPagination(),
                 },
             },
             updates: {
                 Mutation: {
+                    createPost: (_result, args, cache, info) => {
+                        // invalidate all posts queries to prevent data race conditions
+                        cache
+                            .inspectFields('Query')
+                            ?.filter((info) => info.fieldName === 'posts')
+                            ?.forEach((fi) => {
+                                cache.invalidate(
+                                    'Query',
+                                    'posts',
+                                    fi.arguments || {}
+                                )
+                            })
+                    },
                     changePassword: (_result, args, cache, info) => {
+                        // prevent redundant network me query fetch by putting user to cache
                         betterUpdateQuery<ChangePasswordMutation, MeQuery>(
                             cache,
                             { query: MeDocument },
@@ -91,6 +105,7 @@ export const createUrqlClient = (ssrExchange: any) => ({
                         )
                     },
                     logout: (_result, args, cache, info) => {
+                        // update me query, so ui will correspond
                         betterUpdateQuery<LogoutMutation, MeQuery>(
                             cache,
                             { query: MeDocument },
@@ -99,6 +114,7 @@ export const createUrqlClient = (ssrExchange: any) => ({
                         )
                     },
                     login: (_result, args, cache, info) => {
+                        // prevent redundant network me query fetch by putting user to cache
                         betterUpdateQuery<LoginMutation, MeQuery>(
                             cache,
                             { query: MeDocument },
@@ -115,6 +131,7 @@ export const createUrqlClient = (ssrExchange: any) => ({
                         )
                     },
                     register: (_result, args, cache, info) => {
+                        // prevent redundant network me query fetch by putting user to cache
                         betterUpdateQuery<RegisterMutation, MeQuery>(
                             cache,
                             { query: MeDocument },
