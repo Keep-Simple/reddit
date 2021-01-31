@@ -1,5 +1,9 @@
+import { gql } from 'graphql-tag'
 import { stringifyVariables } from '@urql/core'
-import { ChangePasswordMutation } from './../generated/graphql'
+import {
+    ChangePasswordMutation,
+    VoteMutationVariables,
+} from './../generated/graphql'
 import { cacheExchange } from '@urql/exchange-graphcache'
 import {
     Cache,
@@ -58,10 +62,13 @@ function betterUpdateQuery<Result, Query>(
     return cache.updateQuery(qi, (data) => fn(result, data as any) as any)
 }
 
-export const createUrqlClient = (ssrExchange: any) => ({
+export const createUrqlClient = (ssrExchange: any, ctx: any) => ({
     url: 'http://localhost:3001/graphql',
     fetchOptions: {
         credentials: 'include' as const,
+        headers: {
+            cookie: ctx.req.headers.cookie || '',
+        },
     },
     exchanges: [
         dedupExchange,
@@ -74,6 +81,42 @@ export const createUrqlClient = (ssrExchange: any) => ({
             },
             updates: {
                 Mutation: {
+                    vote: (_result, args, cache, info) => {
+                        const { postId, value } = args as VoteMutationVariables
+                        const data = cache.readFragment(
+                            gql`
+                                fragment _ on Post {
+                                    id
+                                    points
+                                    voteStatus
+                                }
+                            `,
+                            { id: postId } as any
+                        )
+
+                        if (data) {
+                            if (data.voteStatus === value) return
+
+                            const newPoints =
+                                (data.points as number) +
+                                (!data.voteStatus ? 1 : 2) * value
+
+                            cache.writeFragment(
+                                gql`
+                                    fragment __ on Post {
+                                        points
+                                        id
+                                        voteStatus
+                                    }
+                                `,
+                                {
+                                    id: postId,
+                                    points: newPoints,
+                                    voteStatus: value,
+                                } as any
+                            )
+                        }
+                    },
                     createPost: (_result, args, cache, info) => {
                         // invalidate all posts queries to prevent data race conditions
                         cache

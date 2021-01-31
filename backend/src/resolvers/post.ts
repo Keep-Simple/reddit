@@ -15,6 +15,7 @@ import { getConnection } from 'typeorm'
 import { Post } from '../entities/Post'
 import { isAuth } from './../middleware/isAuth'
 import { MyContext } from '../types'
+import { Updoot } from '../entities/Updoot'
 
 @InputType()
 class PostInput {
@@ -33,10 +34,13 @@ export class PostResolver {
 
     @Query(() => [Post])
     async posts(
+        @Ctx()
+        { req }: MyContext,
         @Arg('limit', () => Int) limit: number,
         @Arg('cursor', () => String, { nullable: true }) cursor?: string
     ) {
         const realLimit = Math.min(50, limit)
+        const userId = req.session.userId
 
         const posts = await getConnection().query(
             `
@@ -47,7 +51,12 @@ export class PostResolver {
             'email', u.email,
             'createdAt', u."createdAt",
             'updatedAt', u."updatedAt"
-        ) creator
+        ) creator,
+        ${
+            userId
+                ? `(select value from updoot where "userId" = ${userId} and "postId" = p.id) "voteStatus"`
+                : 'null as "voteStatus"'
+        }
         from post p
         inner join public.user u on u.id = p."creatorId"
         ${cursor ? `where p."createdAt" < ${new Date(parseInt(cursor))}` : ''}
@@ -91,30 +100,53 @@ export class PostResolver {
     @Mutation(() => Boolean)
     @UseMiddleware(isAuth)
     async vote(
-        @Arg('postId') postId: number,
-        @Arg('value') value: number,
-        @Ctx() { req }: MyContext
+        @Arg('postId', () => Int) postId: number,
+        @Arg('value', () => Int) value: number,
+        @Ctx()
+        {
+            req: {
+                session: { userId },
+            },
+        }: MyContext
     ) {
         if (Number.isNaN(value) || value === 0) return false
 
-        const { userId } = req.session
-        const updoot = value > 0 ? 1 : -1
+        const updoot = await Updoot.findOne({ where: { postId, userId } })
 
-        // await Updoot.insert({ userId, postId, value: updoot })
+        const updootValue = value > 0 ? 1 : -1
 
-        await getConnection().query(`
-        start transaction;
+        // change vote
+        if (updoot && updoot.value !== updootValue) {
+            await getConnection().transaction(async (tm) => {
+                await tm.query(
+                    `
+                    update updoot
+                    set value = ${updootValue}
+                    where "postId" = ${postId} and "userId" = ${userId};
 
-        insert into updoot ("userId", "postId", "value")
-        values (${userId}, ${postId}, ${updoot});
+                    update post
+                    set points = points + ${updootValue * 2}
+                    where id = ${postId};
+                    `
+                )
+            })
+            return true
+            // create vote
+        } else if (!updoot) {
+            await getConnection().transaction(async (tm) => {
+                await tm.query(`
+                    insert into updoot ("userId", "postId", "value")
+                    values (${userId}, ${postId}, ${updootValue});
 
-        update post
-        set points = points + ${updoot}
-        where id = ${postId};
-
-        commit;
+                    update post
+                    set points = points + ${updootValue}
+                    where id = ${postId};
         `)
+            })
 
-        return true
+            return true
+        }
+
+        return false
     }
 }
