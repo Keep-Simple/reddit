@@ -17,9 +17,13 @@ const Index = () => {
         cursor: null as string | null,
     })
 
-    const [{ data, fetching }] = usePostsQuery({
+    const [{ data, error, fetching }] = usePostsQuery({
         variables: vars,
     })
+
+    if (error) {
+        console.log(error)
+    }
 
     let body = null
     if (!fetching && !data) {
@@ -43,7 +47,7 @@ const Index = () => {
                                         borderWidth="1px"
                                     >
                                         <UpdootSection post={p} />
-                                        <Box>
+                                        <Box w="100%">
                                             <NextChakraLink
                                                 href={`/post/${id}`}
                                             >

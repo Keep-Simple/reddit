@@ -26,45 +26,6 @@ import {
 } from '../generated/graphql'
 import Router from 'next/router'
 
-export const cursorPagination = (): Resolver => {
-    return (_parent, fieldArgs, cache, info) => {
-        const { parentKey, fieldName } = info
-
-        const notInCache = !cache.resolveFieldByKey(
-            parentKey,
-            `${fieldName}(${stringifyVariables(fieldArgs)})`
-        )
-
-        info.partial = notInCache
-
-        const res = cache
-            .inspectFields(parentKey)
-            .filter((info) => info.fieldName === fieldName)
-            ?.reduce(
-                (acc: string[], fi) =>
-                    acc.concat(
-                        cache.resolveFieldByKey(
-                            parentKey,
-                            fi.fieldKey
-                        ) as string[]
-                    ),
-                []
-            )
-
-        return res?.length === 0 ? undefined : res
-    }
-}
-
-// just funtion to get types
-function betterUpdateQuery<Result, Query>(
-    cache: Cache,
-    qi: QueryInput,
-    result: any,
-    fn: (r: Result, q: Query) => Query
-) {
-    return cache.updateQuery(qi, (data) => fn(result, data as any) as any)
-}
-
 export const createUrqlClient = (ssrExchange: any, ctx: any) => ({
     url: 'http://localhost:3001/graphql',
     fetchOptions: {
@@ -128,16 +89,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => ({
                     },
                     createPost: (_result, _, cache) => {
                         // invalidate all posts queries to prevent data race conditions
-                        cache
-                            .inspectFields('Query')
-                            ?.filter((info) => info.fieldName === 'posts')
-                            ?.forEach((fi) => {
-                                cache.invalidate(
-                                    'Query',
-                                    'posts',
-                                    fi.arguments || {}
-                                )
-                            })
+                        invalidateAllPosts(cache)
                     },
                     changePassword: (_result, _, cache) => {
                         // prevent redundant network me query fetch by putting user to cache
@@ -167,6 +119,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => ({
                     },
                     login: (_result, _, cache) => {
                         // prevent redundant network me query fetch by putting user to cache
+                        invalidateAllPosts(cache)
                         betterUpdateQuery<LoginMutation, MeQuery>(
                             cache,
                             { query: MeDocument },
@@ -213,3 +166,51 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => ({
         fetchExchange,
     ],
 })
+
+// just funtion to get types
+function betterUpdateQuery<Result, Query>(
+    cache: Cache,
+    qi: QueryInput,
+    result: any,
+    fn: (r: Result, q: Query) => Query
+) {
+    return cache.updateQuery(qi, (data) => fn(result, data as any) as any)
+}
+
+function invalidateAllPosts(cache: Cache) {
+    cache
+        .inspectFields('Query')
+        ?.filter((info) => info.fieldName === 'posts')
+        ?.forEach((fi) => {
+            cache.invalidate('Query', 'posts', fi.arguments || {})
+        })
+}
+
+export const cursorPagination = (): Resolver => {
+    return (_parent, fieldArgs, cache, info) => {
+        const { parentKey, fieldName } = info
+
+        const notInCache = !cache.resolveFieldByKey(
+            parentKey,
+            `${fieldName}(${stringifyVariables(fieldArgs)})`
+        )
+
+        info.partial = notInCache
+
+        const res = cache
+            .inspectFields(parentKey)
+            .filter((info) => info.fieldName === fieldName)
+            ?.reduce(
+                (acc: string[], fi) =>
+                    acc.concat(
+                        cache.resolveFieldByKey(
+                            parentKey,
+                            fi.fieldKey
+                        ) as string[]
+                    ),
+                []
+            )
+
+        return res?.length === 0 ? undefined : res
+    }
+}
