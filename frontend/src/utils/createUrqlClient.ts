@@ -1,7 +1,8 @@
-import { gql } from 'graphql-tag'
+import gql from 'graphql-tag'
 import { stringifyVariables } from '@urql/core'
 import {
     ChangePasswordMutation,
+    DeletePostMutationVariables,
     VoteMutationVariables,
 } from './../generated/graphql'
 import { cacheExchange } from '@urql/exchange-graphcache'
@@ -83,7 +84,13 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => ({
             },
             updates: {
                 Mutation: {
-                    vote: (_result, args, cache, info) => {
+                    deletePost: (_result, args, cache) => {
+                        cache.invalidate({
+                            __typename: 'Post',
+                            id: (args as DeletePostMutationVariables).id,
+                        })
+                    },
+                    vote: (_result, args, cache) => {
                         const { postId, value } = args as VoteMutationVariables
                         const data = cache.readFragment(
                             gql`
@@ -119,7 +126,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => ({
                             )
                         }
                     },
-                    createPost: (_result, args, cache, info) => {
+                    createPost: (_result, _, cache) => {
                         // invalidate all posts queries to prevent data race conditions
                         cache
                             .inspectFields('Query')
@@ -132,7 +139,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => ({
                                 )
                             })
                     },
-                    changePassword: (_result, args, cache, info) => {
+                    changePassword: (_result, _, cache) => {
                         // prevent redundant network me query fetch by putting user to cache
                         betterUpdateQuery<ChangePasswordMutation, MeQuery>(
                             cache,
@@ -149,7 +156,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => ({
                             }
                         )
                     },
-                    logout: (_result, args, cache, info) => {
+                    logout: (_result, _, cache) => {
                         // update me query, so ui will correspond
                         betterUpdateQuery<LogoutMutation, MeQuery>(
                             cache,
@@ -158,7 +165,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => ({
                             () => ({ me: null })
                         )
                     },
-                    login: (_result, args, cache, info) => {
+                    login: (_result, _, cache) => {
                         // prevent redundant network me query fetch by putting user to cache
                         betterUpdateQuery<LoginMutation, MeQuery>(
                             cache,
@@ -175,7 +182,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => ({
                             }
                         )
                     },
-                    register: (_result, args, cache, info) => {
+                    register: (_result, _, cache) => {
                         // prevent redundant network me query fetch by putting user to cache
                         betterUpdateQuery<RegisterMutation, MeQuery>(
                             cache,

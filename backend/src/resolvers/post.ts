@@ -59,7 +59,13 @@ export class PostResolver {
         }
         from post p
         inner join public.user u on u.id = p."creatorId"
-        ${cursor ? `where p."createdAt" < ${new Date(parseInt(cursor))}` : ''}
+        ${
+            cursor
+                ? `where p."createdAt" < '${new Date(
+                      parseInt(cursor)
+                  ).toISOString()}'`
+                : ''
+        }
         order by p."createdAt" DESC
         limit ${realLimit}
         `
@@ -69,8 +75,8 @@ export class PostResolver {
     }
 
     @Query(() => Post, { nullable: true })
-    post(@Arg('id') id: number) {
-        return Post.findOne(id)
+    post(@Arg('id', () => Int) id: number) {
+        return Post.findOne(id, { relations: ['creator'] })
     }
 
     @UseMiddleware(isAuth)
@@ -83,17 +89,39 @@ export class PostResolver {
     }
 
     @Mutation(() => Post, { nullable: true })
-    async updatePost(@Arg('id') id: number, @Arg('title') title?: string) {
-        const post = await Post.findOne(id)
+    @UseMiddleware(isAuth)
+    async updatePost(
+        @Arg('id', () => Int) id: number,
+        @Arg('title') title: string,
+        @Arg('text') text: string,
+        @Ctx() { req }: MyContext
+    ): Promise<Post | null> {
+        // return Post.update(
+        //     { id, creatorId: req.session.userId },
+        //     { title, text }
+        // )
+        const result = await getConnection()
+            .createQueryBuilder()
+            .update(Post)
+            .set({ text, title })
+            .where('id = :id and "creatorId" = :creatorId', {
+                id,
+                creatorId: req.session.userId,
+            })
+            .returning('*')
+            .execute()
 
-        if (title && post) await Post.update({ id }, { title })
-
-        return post
+        return result.raw[0]
     }
 
     @Mutation(() => Boolean)
-    async deletePost(@Arg('id') id: number) {
-        await Post.delete(id)
+    @UseMiddleware(isAuth)
+    async deletePost(
+        @Arg('id', () => Int) id: number,
+        @Ctx() { req }: MyContext
+    ) {
+        // updoots will be deleted by cascade
+        await Post.delete({ id, creatorId: req.session.userId })
         return true
     }
 

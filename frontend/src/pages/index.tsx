@@ -1,25 +1,22 @@
-import {
-    Box,
-    Button,
-    Flex,
-    Heading,
-    Spinner,
-    Stack,
-    Text,
-} from '@chakra-ui/core'
-import NextLink from 'next/link'
+import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/core'
 import { withUrqlClient } from 'next-urql'
 import { Layout } from '../components/Layout'
-import { usePostsQuery } from '../generated/graphql'
+import { useMeQuery, usePostsQuery } from '../generated/graphql'
 import { createUrqlClient } from '../utils/createUrqlClient'
 import React, { useState } from 'react'
+import NextLink from 'next/link'
 import AlertUI from '../components/Alert'
+import { Loading } from '../components/Loading'
+import { NextChakraLink } from '../components/NextChakraLink'
+import { EditDeletePostButtons } from '../components/EditDeletePostButtons'
+import { UpdootSection } from '../components/UpdootSection'
 
 const Index = () => {
     const [vars, setVars] = useState({
         limit: 15,
         cursor: null as string | null,
     })
+
     const [{ data, fetching }] = usePostsQuery({
         variables: vars,
     })
@@ -30,33 +27,44 @@ const Index = () => {
     } else {
         body =
             !data && fetching ? (
-                <Flex m="auto">
-                    <Spinner
-                        m="auto"
-                        size="xl"
-                        color="teal.500"
-                        emptyColor="gray.200"
-                    />
-                </Flex>
+                <Loading />
             ) : (
                 <>
                     <Stack spacing={8}>
-                        {data?.posts.map(
-                            ({ id, title, textSnippet, creator }) => (
-                                <Box
-                                    key={id}
-                                    p={5}
-                                    shadow="md"
-                                    borderWidth="1px"
-                                >
-                                    <Heading fontSize="xl">{title}</Heading>
-                                    <Text color="blue.400">
-                                        posted by {creator.username}
-                                    </Text>
-                                    <Text mt={4}>{textSnippet}</Text>
-                                </Box>
-                            )
-                        )}
+                        {data?.posts
+                            .filter((p) => p !== null) // cache invalidation will leave null
+                            .map((p) => {
+                                const { id, title, textSnippet, creator } = p
+                                return (
+                                    <Flex
+                                        key={id}
+                                        p={5}
+                                        shadow="md"
+                                        borderWidth="1px"
+                                    >
+                                        <UpdootSection post={p} />
+                                        <Box>
+                                            <NextChakraLink
+                                                href={`/post/${id}`}
+                                            >
+                                                <Heading fontSize="xl">
+                                                    {title}
+                                                </Heading>
+                                            </NextChakraLink>
+
+                                            <Text color="blue.400">
+                                                posted by {creator.username}
+                                            </Text>
+                                            <Text mt={4}>{textSnippet}</Text>
+
+                                            <EditDeletePostButtons
+                                                postId={id}
+                                                creatorId={creator.id}
+                                            />
+                                        </Box>
+                                    </Flex>
+                                )
+                            })}
                     </Stack>
                     {data && (
                         <Flex>

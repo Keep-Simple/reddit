@@ -1,7 +1,7 @@
-import { Box, Button, Flex, Link, Spinner } from '@chakra-ui/core'
-import NextLink from 'next/link'
+import { Box, Button, Flex, Heading, Spinner } from '@chakra-ui/core'
 import React from 'react'
 import { useLogoutMutation, useMeQuery } from '../generated/graphql'
+import { NextChakraLink } from './NextChakraLink'
 
 interface NavBarProps {}
 
@@ -16,12 +16,12 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
     } else if (!data?.me) {
         body = (
             <>
-                <NextLink href="login">
-                    <Link mr={2}>Sign In</Link>
-                </NextLink>
-                <NextLink href="register">
-                    <Link>Sign Up</Link>
-                </NextLink>
+                <NextChakraLink href="login" mr={2}>
+                    Sign In
+                </NextChakraLink>
+                <NextChakraLink href="register" mr={2}>
+                    Sign Up
+                </NextChakraLink>
             </>
         )
     } else {
@@ -41,13 +41,17 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
     return (
         <Flex
             p={4}
-            bg="tan"
-            justifyContent="flex-end"
+            bg="purple.200"
+            justifyContent="center"
             position="sticky"
-            top={0}
             zIndex={10}
         >
-            {body}
+            <Flex flex={1} maxW={800} justifyContent="space-between">
+                <NextChakraLink href="/">
+                    <Heading>keep-music</Heading>
+                </NextChakraLink>
+                <Flex alignItems="center">{body}</Flex>
+            </Flex>
         </Flex>
     )
 }
