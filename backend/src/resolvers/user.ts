@@ -86,7 +86,7 @@ export class UserResolver {
             1000 * 3600 * 72 // 3 days
         )
 
-        const host = 'http://localhost:3000'
+        const host = process.env.CORS_ORIGIN
 
         await sendEmail(
             email,

@@ -5,12 +5,12 @@
     "main": "index.js",
     "scripts": {
         "build": "tsc",
+        "gen-envs": "gen-env-types .env -o src/env.d.ts -e .",
         "start2": "ts-node src/index.ts",
         "start": "node dist/index.js",
         "dev": "nodemon dist/index.js",
         "dev2": "nodemon --exec ts-node src/index.js",
-        "watch": "tsc -w",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "watch": "tsc -w"
     },
     "keywords": [],
     "author": "",
@@ -24,6 +24,7 @@
         "@types/node": "^14.10.1",
         "@types/redis": "^2.8.27",
         "@types/uuid": "^8.3.0",
+        "gen-env-types": "^1.0.5",
         "ts-node": "^9.0.0",
         "typescript": "^4.0.2"
     },

@@ -1,6 +1,6 @@
 node_modules
 .idea
 dist
-.env
+.env*
 yarn.lock
 package-lock.json

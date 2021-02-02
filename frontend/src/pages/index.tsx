@@ -1,7 +1,7 @@
 import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/core'
 import { withUrqlClient } from 'next-urql'
 import { Layout } from '../components/Layout'
-import { useMeQuery, usePostsQuery } from '../generated/graphql'
+import { usePostsQuery } from '../generated/graphql'
 import { createUrqlClient } from '../utils/createUrqlClient'
 import React, { useState } from 'react'
 import NextLink from 'next/link'

@@ -1,6 +1,6 @@
-import 'reflect-metadata'
 // sticking envs and will fail if not all of them existing
 import 'dotenv-safe/config'
+import 'reflect-metadata'
 import { createConnection } from 'typeorm'
 import { ApolloServer } from 'apollo-server-express'
 import connectRedis from 'connect-redis'
@@ -24,7 +24,7 @@ const main = async () => {
         type: 'postgres',
         url: process.env.DATABASE_URL,
         logging: true,
-        synchronize: true,
+        // synchronize: !__prod__,
         entities: [User, Post, Updoot],
         migrations: [path.join(__dirname, './migrations/*')],
     })
@@ -32,13 +32,15 @@ const main = async () => {
     await dbConnection.runMigrations()
 
     const RedisStore = connectRedis(session)
-    const redis = new Redis()
+    const redis = new Redis(process.env.REDIS_URL)
 
     const app = express()
 
+    app.set('trust proxy', 1)
+
     app.use(
         cors({
-            origin: 'http://localhost:3000',
+            origin: process.env.CORS_ORIGIN,
             credentials: true,
         })
     )
@@ -53,10 +55,13 @@ const main = async () => {
             cookie: {
                 maxAge: 1000 * 60 * 60 * 24 * 10, // 10 days
                 httpOnly: true,
+                // sameSite: 'none', // csrf
+                // secure: true,
                 sameSite: 'lax', // csrf
                 secure: __prod__, // only works in https in prod
+                domain: __prod__ ? '.mydomain.com' : undefined,
             },
-            secret: '98jldfgj14kjoasdfjasldk3',
+            secret: process.env.SESSION_SECRET,
             saveUninitialized: false,
             resave: false,
         })
@@ -81,8 +86,8 @@ const main = async () => {
         cors: false,
     })
 
-    app.listen(process.env.PORT, () =>
-        console.log('server started on port 3001')
+    app.listen(parseInt(process.env.PORT), () =>
+        console.log(`server started on port ${process.env.PORT}`)
     )
 }
 main()
