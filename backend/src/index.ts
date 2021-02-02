@@ -55,8 +55,6 @@ const main = async () => {
             cookie: {
                 maxAge: 1000 * 60 * 60 * 24 * 10, // 10 days
                 httpOnly: true,
-                // sameSite: 'none', // csrf
-                // secure: true,
                 sameSite: 'lax', // csrf
                 secure: __prod__, // only works in https in prod
                 domain: __prod__ ? '.mydomain.com' : undefined,

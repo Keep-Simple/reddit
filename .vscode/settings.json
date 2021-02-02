@@ -5,8 +5,8 @@
             "server": "localhost",
             "port": 5432,
             "driver": "PostgreSQL",
-            "name": "keep-music",
-            "database": "keep-music",
+            "name": "lireddit",
+            "database": "lireddit",
             "username": "nick",
             "password": "postgres"
         }
