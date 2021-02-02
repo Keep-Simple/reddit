@@ -23,7 +23,14 @@ export const EditDeletePostButtons: React.FC<Props> = ({
                 aria-label="delete post"
                 float="right"
                 ml={3}
-                onClick={() => deletePost({ variables: { id: postId } })}
+                onClick={() =>
+                    deletePost({
+                        variables: { id: postId },
+                        update(cache) {
+                            cache.evict({ id: 'Post:' + postId })
+                        },
+                    })
+                }
             />
             <NextLink href={`/post/edit/${postId}`}>
                 <IconButton icon="edit" aria-label="edit post" float="right" />

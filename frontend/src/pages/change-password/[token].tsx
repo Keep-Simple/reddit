@@ -6,8 +6,13 @@ import AlertUI from '../../components/Alert'
 import { InputField } from '../../components/InputField'
 import { Wrapper } from '../../components/Wrapper'
 
-import { useChangePasswordMutation } from '../../generated/graphql'
+import {
+    MeDocument,
+    MeQuery,
+    useChangePasswordMutation,
+} from '../../generated/graphql'
 import { toErrorMap } from '../../utils/toErrorMap'
+import { withApollo } from '../../utils/withApollo'
 
 const ChangePassword: React.FC = () => {
     const router = useRouter()
@@ -17,8 +22,8 @@ const ChangePassword: React.FC = () => {
         <Wrapper variant="small">
             <Formik
                 initialValues={{ newPassword: '', tokenError: '' }}
-                onSubmit={async (values, { setErrors }) => {
-                    const { data } = await changePassword({
+                onSubmit={(values, { setErrors }) => {
+                    return changePassword({
                         variables: {
                             newPassword: values.newPassword,
                             token:
@@ -26,13 +31,23 @@ const ChangePassword: React.FC = () => {
                                     ? router.query.token
                                     : '',
                         },
+                        update(cache, { data }) {
+                            if (data?.changePassword.errors) {
+                                setErrors(
+                                    toErrorMap(data.changePassword.errors)
+                                )
+                            } else if (data?.changePassword.user) {
+                                cache.writeQuery<MeQuery>({
+                                    query: MeDocument,
+                                    data: {
+                                        __typename: 'Query',
+                                        me: data.changePassword.user,
+                                    },
+                                })
+                                router.push('/')
+                            }
+                        },
                     })
-
-                    if (data?.changePassword.errors) {
-                        setErrors(toErrorMap(data.changePassword.errors))
-                    } else if (data?.changePassword.user) {
-                        router.push('/')
-                    }
                 }}
             >
                 {({ isSubmitting, errors: { tokenError } }) => (
@@ -72,4 +87,4 @@ const ChangePassword: React.FC = () => {
     )
 }
 
-export default ChangePassword
+export default withApollo({ ssr: true })(ChangePassword)

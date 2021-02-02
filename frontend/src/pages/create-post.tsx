@@ -5,6 +5,7 @@ import { InputField } from '../components/InputField'
 import { Layout } from '../components/Layout'
 import { useCreatePostMutation } from '../generated/graphql'
 import { useIsAuth } from '../utils/useIsAuth'
+import { withApollo } from '../utils/withApollo'
 
 const CreatePost: React.FC<{}> = () => {
     useIsAuth()
@@ -18,6 +19,9 @@ const CreatePost: React.FC<{}> = () => {
                 onSubmit={async (values) => {
                     const { errors } = await createPost({
                         variables: { input: values },
+                        update(cache) {
+                            cache.evict({ fieldName: 'posts' })
+                        },
                     })
                     if (!errors) router.back()
                 }}
@@ -52,4 +56,4 @@ const CreatePost: React.FC<{}> = () => {
     )
 }
 
-export default CreatePost
+export default withApollo({ ssr: false })(CreatePost)

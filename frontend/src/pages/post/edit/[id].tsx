@@ -8,6 +8,7 @@ import { Loading } from '../../../components/Loading'
 import { usePostQuery, useUpdatePostMutation } from '../../../generated/graphql'
 import { useGetQueryId } from '../../../utils/useGetQueryId'
 import { useIsAuth } from '../../../utils/useIsAuth'
+import { withApollo } from '../../../utils/withApollo'
 
 const EditPost: React.FC<{}> = () => {
     useIsAuth()
@@ -45,8 +46,8 @@ const EditPost: React.FC<{}> = () => {
                     id: postId,
                 }}
                 onSubmit={async (values) => {
-                    const { error } = await updatePost({ variables: values })
-                    if (!error) router.back()
+                    const { errors } = await updatePost({ variables: values })
+                    if (!errors) router.back()
                 }}
                 enableReinitialize
             >
@@ -80,4 +81,4 @@ const EditPost: React.FC<{}> = () => {
     )
 }
 
-export default EditPost
+export default withApollo({ ssr: false })(EditPost)

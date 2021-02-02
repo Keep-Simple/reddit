@@ -15,10 +15,10 @@ export const NavBar: React.FC = () => {
     } else if (!data?.me) {
         body = (
             <>
-                <NextChakraLink href="login" mr={2}>
+                <NextChakraLink href="/login" mr={2}>
                     Sign In
                 </NextChakraLink>
-                <NextChakraLink href="register" mr={2}>
+                <NextChakraLink href="/register" mr={2}>
                     Sign Up
                 </NextChakraLink>
             </>

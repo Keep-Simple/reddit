@@ -1,6 +1,11 @@
 import React, { useState } from 'react'
 import { Flex, IconButton } from '@chakra-ui/core'
-import { PostSnippetFragment, useVoteMutation } from '../generated/graphql'
+import {
+    PostSnippetFragment,
+    useVoteMutation,
+    VoteMutation,
+} from '../generated/graphql'
+import { ApolloCache } from '@apollo/client'
 
 interface UpdootSectionProps {
     post: PostSnippetFragment
@@ -8,8 +13,28 @@ interface UpdootSectionProps {
 
 type UpdootStates = 'updoot-loading' | 'downdoot-loading' | 'not-loading'
 
+const updateAfterVote = (
+    value: number,
+    post: PostSnippetFragment,
+    cache: ApolloCache<VoteMutation>
+) => {
+    if (post.voteStatus === value) return
+
+    cache.modify({
+        id: cache.identify(post),
+        fields: {
+            points(cachedPoints, { readField }) {
+                return cachedPoints + (!readField('voteStatus') ? 1 : 2) * value
+            },
+            voteStatus() {
+                return value
+            },
+        },
+    })
+}
+
 export const UpdootSection: React.FC<UpdootSectionProps> = ({ post }) => {
-    const [, vote] = useVoteMutation()
+    const [vote] = useVoteMutation()
 
     const [loadingState, setLoadingState] = useState<UpdootStates>(
         'not-loading'
@@ -28,8 +53,11 @@ export const UpdootSection: React.FC<UpdootSectionProps> = ({ post }) => {
 
                     setLoadingState('updoot-loading')
                     await vote({
-                        postId: post.id,
-                        value: 1,
+                        variables: {
+                            postId: post.id,
+                            value: 1,
+                        },
+                        update: (cache) => updateAfterVote(1, post, cache),
                     })
                     setLoadingState('not-loading')
                 }}
@@ -45,8 +73,11 @@ export const UpdootSection: React.FC<UpdootSectionProps> = ({ post }) => {
 
                     setLoadingState('downdoot-loading')
                     await vote({
-                        postId: post.id,
-                        value: -1,
+                        variables: {
+                            postId: post.id,
+                            value: -1,
+                        },
+                        update: (cache) => updateAfterVote(-1, post, cache),
                     })
                     setLoadingState('not-loading')
                 }}

@@ -6,6 +6,7 @@ import { Layout } from '../../components/Layout'
 import { Loading } from '../../components/Loading'
 import { usePostQuery } from '../../generated/graphql'
 import { useGetQueryId } from '../../utils/useGetQueryId'
+import { withApollo } from '../../utils/withApollo'
 
 const Post: React.FC<{}> = ({}) => {
     const postId = useGetQueryId()
@@ -46,4 +47,4 @@ const Post: React.FC<{}> = ({}) => {
     )
 }
 
-export default Post
+export default withApollo({ ssr: true })(Post)

@@ -1,36 +1,43 @@
 import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/core'
 import { Layout } from '../components/Layout'
 import { usePostsQuery } from '../generated/graphql'
-import React, { useState } from 'react'
 import NextLink from 'next/link'
 import AlertUI from '../components/Alert'
 import { Loading } from '../components/Loading'
 import { NextChakraLink } from '../components/NextChakraLink'
 import { EditDeletePostButtons } from '../components/EditDeletePostButtons'
 import { UpdootSection } from '../components/UpdootSection'
+import { withApollo } from '../utils/withApollo'
 
 const Index = () => {
-    const [vars, setVars] = useState({
-        limit: 15,
-        cursor: null as string | null,
+    const { data, error, loading, fetchMore, variables } = usePostsQuery({
+        variables: {
+            limit: 15,
+            cursor: null as string | null,
+        },
+        notifyOnNetworkStatusChange: true,
     })
-
-    const { data, error, loading } = usePostsQuery({
-        variables: vars,
-    })
-
-    if (error) {
-        console.log(error)
-    }
 
     let body = null
-    if (!loading && !data) {
-        body = <AlertUI message="No Posts or Failed loading them" />
+
+    if (error) {
+        body = <AlertUI message={error?.message} />
     } else {
-        body =
-            !data && loading ? (
-                <Loading />
-            ) : (
+        if (!loading && !data) {
+            body = <AlertUI message="No Posts, WOW" status="info" />
+        } else if (!data && loading) {
+            body = <Loading />
+        } else if (data) {
+            const fetchMorePosts = () => {
+                fetchMore({
+                    variables: {
+                        limit: variables?.limit,
+                        cursor: data.posts[data.posts.length - 1].createdAt,
+                    },
+                })
+            }
+
+            body = (
                 <>
                     <Stack spacing={8}>
                         {data?.posts
@@ -76,14 +83,7 @@ const Index = () => {
                                 mx="auto"
                                 px={8}
                                 py={5}
-                                onClick={() => {
-                                    setVars({
-                                        limit: vars.limit,
-                                        cursor:
-                                            data.posts[data.posts.length - 1]
-                                                .createdAt,
-                                    })
-                                }}
+                                onClick={fetchMorePosts}
                             >
                                 Load More
                             </Button>
@@ -91,6 +91,7 @@ const Index = () => {
                     )}
                 </>
             )
+        }
     }
 
     return (
@@ -105,4 +106,4 @@ const Index = () => {
     )
 }
 
-export default Index
+export default withApollo({ ssr: true })(Index)

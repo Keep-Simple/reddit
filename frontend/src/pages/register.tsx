@@ -3,8 +3,9 @@ import { Form, Formik } from 'formik'
 import { useRouter } from 'next/router'
 import { InputField } from '../components/InputField'
 import { Wrapper } from '../components/Wrapper'
-import { useRegisterMutation } from '../generated/graphql'
+import { MeDocument, MeQuery, useRegisterMutation } from '../generated/graphql'
 import { toErrorMap } from '../utils/toErrorMap'
+import { withApollo } from '../utils/withApollo'
 interface registerProps {}
 
 const Register: React.FC<registerProps> = ({}) => {
@@ -15,16 +16,24 @@ const Register: React.FC<registerProps> = ({}) => {
         <Wrapper variant="small">
             <Formik
                 initialValues={{ username: '', password: '', email: '' }}
-                onSubmit={async (values, { setErrors }) => {
-                    const { data } = await register({
+                onSubmit={(values, { setErrors }) => {
+                    return register({
                         variables: { options: values },
+                        update(cache, { data }) {
+                            if (data?.register.errors) {
+                                setErrors(toErrorMap(data.register.errors))
+                            } else if (data?.register.user) {
+                                cache.writeQuery<MeQuery>({
+                                    query: MeDocument,
+                                    data: {
+                                        __typename: 'Query',
+                                        me: data.register.user,
+                                    },
+                                })
+                                router.back()
+                            }
+                        },
                     })
-
-                    if (data?.register.errors) {
-                        setErrors(toErrorMap(data.register.errors))
-                    } else if (data?.register.user) {
-                        router.back()
-                    }
                 }}
             >
                 {({ isSubmitting }) => (
@@ -64,4 +73,4 @@ const Register: React.FC<registerProps> = ({}) => {
     )
 }
 
-export default Register
+export default withApollo({ ssr: false })(Register)
