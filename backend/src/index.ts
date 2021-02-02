@@ -1,4 +1,6 @@
 import 'reflect-metadata'
+// sticking envs and will fail if not all of them existing
+import 'dotenv-safe/config'
 import { createConnection } from 'typeorm'
 import { ApolloServer } from 'apollo-server-express'
 import connectRedis from 'connect-redis'
@@ -20,9 +22,7 @@ import { createUpdootLoader } from './utils/createUpdootLoader'
 const main = async () => {
     const dbConnection = await createConnection({
         type: 'postgres',
-        database: 'keep-music',
-        username: 'nick',
-        password: 'postgres',
+        url: process.env.DATABASE_URL,
         logging: true,
         synchronize: true,
         entities: [User, Post, Updoot],
@@ -81,6 +81,8 @@ const main = async () => {
         cors: false,
     })
 
-    app.listen(3001, () => console.log('server started on port 3001'))
+    app.listen(process.env.PORT, () =>
+        console.log('server started on port 3001')
+    )
 }
 main()
