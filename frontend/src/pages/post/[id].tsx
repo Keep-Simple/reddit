@@ -1,23 +1,21 @@
 import { Heading } from '@chakra-ui/core'
-import { withUrqlClient } from 'next-urql'
 import React from 'react'
 import AlertUI from '../../components/Alert'
 import { EditDeletePostButtons } from '../../components/EditDeletePostButtons'
 import { Layout } from '../../components/Layout'
 import { Loading } from '../../components/Loading'
 import { usePostQuery } from '../../generated/graphql'
-import { createUrqlClient } from '../../utils/createUrqlClient'
 import { useGetQueryId } from '../../utils/useGetQueryId'
 
 const Post: React.FC<{}> = ({}) => {
     const postId = useGetQueryId()
 
-    const [{ data, fetching }] = usePostQuery({
-        pause: postId === -1,
+    const { data, loading } = usePostQuery({
+        skip: postId === -1,
         variables: { id: postId },
     })
 
-    if (fetching) {
+    if (loading) {
         return (
             <Layout>
                 <Loading />
@@ -48,4 +46,4 @@ const Post: React.FC<{}> = ({}) => {
     )
 }
 
-export default withUrqlClient(createUrqlClient, { ssr: true })(Post)
+export default Post

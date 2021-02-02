@@ -1,8 +1,6 @@
 import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/core'
-import { withUrqlClient } from 'next-urql'
 import { Layout } from '../components/Layout'
 import { usePostsQuery } from '../generated/graphql'
-import { createUrqlClient } from '../utils/createUrqlClient'
 import React, { useState } from 'react'
 import NextLink from 'next/link'
 import AlertUI from '../components/Alert'
@@ -17,7 +15,7 @@ const Index = () => {
         cursor: null as string | null,
     })
 
-    const [{ data, error, fetching }] = usePostsQuery({
+    const { data, error, loading } = usePostsQuery({
         variables: vars,
     })
 
@@ -26,11 +24,11 @@ const Index = () => {
     }
 
     let body = null
-    if (!fetching && !data) {
+    if (!loading && !data) {
         body = <AlertUI message="No Posts or Failed loading them" />
     } else {
         body =
-            !data && fetching ? (
+            !data && loading ? (
                 <Loading />
             ) : (
                 <>
@@ -73,7 +71,7 @@ const Index = () => {
                     {data && (
                         <Flex>
                             <Button
-                                isLoading={fetching}
+                                isLoading={loading}
                                 my={4}
                                 mx="auto"
                                 px={8}
@@ -107,4 +105,4 @@ const Index = () => {
     )
 }
 
-export default withUrqlClient(createUrqlClient, { ssr: true })(Index)
+export default Index

@@ -1,4 +1,3 @@
-import { withUrqlClient } from 'next-urql'
 import { useRouter } from 'next/router'
 import { Button } from '@chakra-ui/core'
 import { Formik, Form } from 'formik'
@@ -8,12 +7,11 @@ import { InputField } from '../../components/InputField'
 import { Wrapper } from '../../components/Wrapper'
 
 import { useChangePasswordMutation } from '../../generated/graphql'
-import { createUrqlClient } from '../../utils/createUrqlClient'
 import { toErrorMap } from '../../utils/toErrorMap'
 
 const ChangePassword: React.FC = () => {
     const router = useRouter()
-    const [, changePassword] = useChangePasswordMutation()
+    const [changePassword] = useChangePasswordMutation()
 
     return (
         <Wrapper variant="small">
@@ -21,11 +19,13 @@ const ChangePassword: React.FC = () => {
                 initialValues={{ newPassword: '', tokenError: '' }}
                 onSubmit={async (values, { setErrors }) => {
                     const { data } = await changePassword({
-                        newPassword: values.newPassword,
-                        token:
-                            typeof router.query.token === 'string'
-                                ? router.query.token
-                                : '',
+                        variables: {
+                            newPassword: values.newPassword,
+                            token:
+                                typeof router.query.token === 'string'
+                                    ? router.query.token
+                                    : '',
+                        },
                     })
 
                     if (data?.changePassword.errors) {
@@ -72,4 +72,4 @@ const ChangePassword: React.FC = () => {
     )
 }
 
-export default withUrqlClient(createUrqlClient)(ChangePassword)
+export default ChangePassword

@@ -1,13 +1,11 @@
 import { Box, Button } from '@chakra-ui/core'
 import { Formik, Form } from 'formik'
-import { withUrqlClient } from 'next-urql'
 import { useRouter } from 'next/router'
 import AlertUI from '../../../components/Alert'
 import { InputField } from '../../../components/InputField'
 import { Layout } from '../../../components/Layout'
 import { Loading } from '../../../components/Loading'
 import { usePostQuery, useUpdatePostMutation } from '../../../generated/graphql'
-import { createUrqlClient } from '../../../utils/createUrqlClient'
 import { useGetQueryId } from '../../../utils/useGetQueryId'
 import { useIsAuth } from '../../../utils/useIsAuth'
 
@@ -15,14 +13,14 @@ const EditPost: React.FC<{}> = () => {
     useIsAuth()
     const router = useRouter()
     const postId = useGetQueryId()
-    const [, updatePost] = useUpdatePostMutation()
+    const [updatePost] = useUpdatePostMutation()
 
-    const [{ data, fetching }] = usePostQuery({
+    const { data, loading } = usePostQuery({
         variables: { id: postId },
-        pause: postId === -1,
+        skip: postId === -1,
     })
 
-    if (fetching) {
+    if (loading) {
         return (
             <Layout>
                 <Loading />
@@ -47,7 +45,7 @@ const EditPost: React.FC<{}> = () => {
                     id: postId,
                 }}
                 onSubmit={async (values) => {
-                    const { error } = await updatePost(values)
+                    const { error } = await updatePost({ variables: values })
                     if (!error) router.back()
                 }}
                 enableReinitialize
@@ -82,4 +80,4 @@ const EditPost: React.FC<{}> = () => {
     )
 }
 
-export default withUrqlClient(createUrqlClient, { ssr: true })(EditPost)
+export default EditPost
